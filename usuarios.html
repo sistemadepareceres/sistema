@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Controle - Usuários</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .title-section h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .title-section p {
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+
+        .button-group button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            margin-left: 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-back {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .btn-logout {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .new-user-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #34495e;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .checkbox-group {
+            margin-bottom: 15px;
+        }
+
+        .btn-create {
+            background-color: #2ecc71;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .alert {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .alert-success {
+            background-color: #d5f5e3;
+            color: #27ae60;
+            border: 1px solid #2ecc71;
+        }
+
+        .alert-error {
+            background-color: #fadbd8;
+            color: #c0392b;
+            border: 1px solid #e74c3c;
+        }
+
+        .users-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .users-table th {
+            text-align: left;
+            padding: 12px;
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            color: #495057;
+        }
+
+        .users-table td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .badge-admin {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .badge-user {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .badge-active {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .badge-inactive {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-action {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            margin-right: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-reset {
+            background-color: #f1c40f;
+            color: white;
+        }
+
+        .btn-delete {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title-section">
+                <h1>Painel de Controle</h1>
+                <p>Gerenciamento de Usuários</p>
+            </div>
+            <div class="button-group">
+                <button class="btn-logout" onclick="logout()">Sair</button>
+            </div>
+        </div>
+
+        <div class="new-user-section">
+            <div id="successAlert" class="alert alert-success">
+                Usuário criado com sucesso!
+            </div>
+            <div id="errorAlert" class="alert alert-error">
+                Erro ao criar usuário.
+            </div>
+
+            <form id="createUserForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" required>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="isAdmin">
+                    <label for="isAdmin">Usuário Administrador</label>
+                </div>
+
+                <button type="submit" class="btn-create">Criar Usuário</button>
+            </form>
+        </div>
+
+        <div class="users-section">
+            <h2>Usuários Cadastrados</h2>
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Tipo</th>
+                        <th>Último Login</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr>
+                        <td colspan="5" class="loading">Carregando...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDjQmP4qsdC9QnKbvvY4qHmSn_0_GOL-qE",
+            authDomain: "sistema-pareceres-75591.firebaseapp.com",
+            projectId: "sistema-pareceres-75591",
+            storageBucket: "sistema-pareceres-75591.firebasestorage.app",
+            messagingSenderId: "318575244381",
+            appId: "1:318575244381:web:652cbb0d741b1c6bb449b4"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        const createUserForm = document.getElementById('createUserForm');
+        const successAlert = document.getElementById('successAlert');
+        const errorAlert = document.getElementById('errorAlert');
+        const usersTableBody = document.getElementById('usersTableBody');
+
+        // Verificar autenticação
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
+            try {
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (!userDoc.exists || !userDoc.data().isAdmin) {
+                    await auth.signOut();
+                    window.location.href = 'admin-login.html';
+                }
+            } catch (error) {
+                console.error('Erro ao verificar permissões:', error);
+                await auth.signOut();
+                window.location.href = 'admin-login.html';
+            }
+        });
+
+        // Criar novo usuário
+        createUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const isAdmin = document.getElementById('isAdmin').checked;
+
+            try {
+                // Criar usuário no Authentication
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                
+                // Criar documento do usuário no Firestore
+                await db.collection('users').doc(userCredential.user.uid).set({
+                    email: email,
+                    isAdmin: isAdmin,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastLogin: null,
+                    active: true
+                });
+
+                successAlert.style.display = 'block';
+                errorAlert.style.display = 'none';
+                createUserForm.reset();
+                loadUsers();
+
+                setTimeout(() => {
+                    successAlert.style.display = 'none';
+                }, 3000);
+            } catch (error) {
+                console.error('Erro ao criar usuário:', error);
+                errorAlert.textContent = `Erro ao criar usuário: ${error.message}`;
+                errorAlert.style.display = 'block';
+                successAlert.style.display = 'none';
+            }
+        });
+
+        // Carregar usuários
+        async function loadUsers() {
+            try {
+                const snapshot = await db.collection('users').get();
+                
+                let tableHtml = '';
+                snapshot.forEach(doc => {
+                    const userData = doc.data();
+                    const lastLogin = userData.lastLogin ? new Date(userData.lastLogin.toDate()).toLocaleString() : 'Nunca';
+                    const userType = userData.isAdmin ? 
+                        '<span class="badge badge-admin">Admin</span>' : 
+                        '<span class="badge badge-user">Usuário</span>';
+                    const status = userData.active ? 
+                        '<span class="badge badge-active">Ativo</span>' : 
+                        '<span class="badge badge-inactive">Inativo</span>';
+                    
+                    tableHtml += `
+                        <tr>
+                            <td>${userData.email}</td>
+                            <td>${userType}</td>
+                            <td>${lastLogin}</td>
+                            <td>${status}</td>
+                            <td>
+                                <button onclick="resetPassword('${userData.email}')" class="btn-action btn-reset">Redefinir Senha</button>
+                                <button onclick="deleteUser('${doc.id}', '${userData.email}')" class="btn-action btn-delete">Excluir</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                usersTableBody.innerHTML = tableHtml;
+            } catch (error) {
+                console.error('Erro ao carregar usuários:', error);
+                usersTableBody.innerHTML = '<tr><td colspan="5">Erro ao carregar usuários</td></tr>';
+            }
+        }
+
+        // Redefinir senha
+        async function resetPassword(email) {
+            try {
+                await auth.sendPasswordResetEmail(email);
+                alert('Email de redefinição de senha enviado com sucesso!');
+            } catch (error) {
+                console.error('Erro ao enviar email de redefinição:', error);
+                alert('Erro ao enviar email de redefinição de senha');
+            }
+        }
+
+        // Excluir usuário
+        async function deleteUser(userId, email) {
+            if (!confirm(`Tem certeza que deseja excluir o usuário ${email}?`)) {
+                return;
+            }
+
+            try {
+                await db.collection('users').doc(userId).delete();
+                // Nota: A exclusão do usuário no Authentication deve ser feita via Cloud Function
+                alert('Usuário excluído com sucesso!');
+                loadUsers();
+            } catch (error) {
+                console.error('Erro ao excluir usuário:', error);
+                alert('Erro ao excluir usuário');
+            }
+        }
+
+        // Logout
+        async function logout() {
+            try {
+                await auth.signOut();
+                window.location.href = 'admin-login.html';
+            } catch (error) {
+                console.error('Erro ao fazer logout:', error);
+                alert('Erro ao fazer logout');
+            }
+        }
+
+        // Carregar usuários inicialmente
+        loadUsers();
+    </script>
+</body>
+</html>

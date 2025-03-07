@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Pareceres</title>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #2c3e50;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #34495e;
+            font-weight: bold;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .primary-button {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .primary-button:hover {
+            background-color: #2980b9;
+        }
+
+        .back-button {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .back-button:hover {
+            background-color: #7f8c8d;
+        }
+
+        .message {
+            display: none;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .success-message {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .error-message {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .button-container {
+                flex-direction: column;
+            }
+
+            .button-container button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-container">
+            <h1>Cadastro de Pareceres</h1>
+            <button id="logout-button" class="button back-button">Logout</button>
+        </div>
+
+        <form id="parecer-form">
+            <div class="form-group">
+                <label for="ementa">Ementa</label>
+                <textarea id="ementa" name="ementa" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="processo">Número do Processo</label>
+                <input type="text" id="processo" name="processo" required>
+            </div>
+
+            <div class="form-group">
+                <label for="orgao">Órgão</label>
+                <input type="text" id="orgao" name="orgao" required>
+            </div>
+
+            <div class="form-group">
+                <label for="unidade">Unidade</label>
+                <input type="text" id="unidade" name="unidade" required>
+            </div>
+
+            <div class="form-group">
+                <label for="numero-parecer">Número do Parecer</label>
+                <input type="text" id="numero-parecer" name="numero-parecer" required>
+            </div>
+
+            <div class="form-group">
+                <label for="link-sei">Link SEI do Arquivo</label>
+                <input type="url" id="link-sei" name="link-sei" required>
+            </div>
+
+            <div class="button-container">
+                <button type="button" onclick="window.location.href='inicio.html'" class="button back-button">Voltar</button>
+                <button type="submit" class="button primary-button">Salvar Parecer</button>
+            </div>
+        </form>
+
+        <div id="success-message" class="message success-message">
+            Parecer salvo com sucesso!
+        </div>
+        <div id="error-message" class="message error-message">
+            Erro ao salvar parecer. Tente novamente.
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Firebase
+        const firebaseConfig = {
+  apiKey: "AIzaSyDjQmP4qsdC9QnKbvvY4qHmSn_0_GOL-qE",
+  authDomain: "sistema-pareceres-75591.firebaseapp.com",
+  projectId: "sistema-pareceres-75591",
+  storageBucket: "sistema-pareceres-75591.firebasestorage.app",
+  messagingSenderId: "318575244381",
+  appId: "1:318575244381:web:652cbb0d741b1c6bb449b4"
+};
+
+        // Inicializa Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // Verificar autenticação
+        auth.onAuthStateChanged((user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+        });
+
+        // Elements
+        const form = document.getElementById('parecer-form');
+        const successMessage = document.getElementById('success-message');
+        const errorMessage = document.getElementById('error-message');
+
+        // Logout handler
+        document.getElementById('logout-button').addEventListener('click', async () => {
+            try {
+                await auth.signOut();
+                window.location.href = 'login.html';
+            } catch (error) {
+                console.error('Erro ao fazer logout:', error);
+                alert('Erro ao fazer logout. Tente novamente.');
+            }
+        });
+
+        // Função para mostrar mensagem
+        function showMessage(element, duration = 3000) {
+            element.style.display = 'block';
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, duration);
+        }
+
+        // Event Listener do formulário
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            try {
+                const parecer = {
+                    ementa: document.getElementById('ementa').value,
+                    processo: document.getElementById('processo').value,
+                    orgao: document.getElementById('orgao').value,
+                    unidade: document.getElementById('unidade').value,
+                    numeroParecer: document.getElementById('numero-parecer').value,
+                    linkSei: document.getElementById('link-sei').value,
+                    dataCriacao: new Date()
+                };
+
+                await db.collection('pareceres').add(parecer);
+                
+                showMessage(successMessage);
+                
+                // Redirecionar após salvar com sucesso
+                setTimeout(() => {
+                    window.location.href = 'inicio.html';
+                }, 2000);
+                
+                form.reset();
+            } catch (error) {
+                console.error('Erro:', error);
+                showMessage(errorMessage);
+            }
+        });
+    </script>
+</body>
+</html>

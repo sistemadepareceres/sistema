@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Parecer</title>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #2c3e50;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #34495e;
+            font-weight: bold;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .primary-button {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .primary-button:hover {
+            background-color: #2980b9;
+        }
+
+        .back-button {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .back-button:hover {
+            background-color: #7f8c8d;
+        }
+
+        .delete-button {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .delete-button:hover {
+            background-color: #c0392b;
+        }
+
+        .message {
+            display: none;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .success-message {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .error-message {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-title {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .button-container {
+                flex-direction: column;
+            }
+
+            .button {
+                width: 100%;
+            }
+
+            .modal-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-container">
+            <h1>Editar Parecer</h1>
+            <button id="logout-button" class="button back-button">Logout</button>
+        </div>
+
+        <form id="parecer-form">
+            <div class="form-group">
+                <label for="ementa">Ementa</label>
+                <textarea id="ementa" name="ementa" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="processo">Número do Processo</label>
+                <input type="text" id="processo" name="processo" required>
+            </div>
+
+            <div class="form-group">
+                <label for="orgao">Órgão</label>
+                <input type="text" id="orgao" name="orgao" required>
+            </div>
+
+            <div class="form-group">
+                <label for="unidade">Unidade</label>
+                <input type="text" id="unidade" name="unidade" required>
+            </div>
+
+            <div class="form-group">
+                <label for="numero-parecer">Número do Parecer</label>
+                <input type="text" id="numero-parecer" name="numero-parecer" required>
+            </div>
+
+            <div class="form-group">
+                <label for="link-sei">Link SEI do Arquivo</label>
+                <input type="url" id="link-sei" name="link-sei" required>
+            </div>
+
+            <div class="button-container">
+                <button type="button" onclick="window.location.href='inicio.html'" class="button back-button">Voltar</button>
+                <button type="submit" class="button primary-button">Salvar Alterações</button>
+                <button type="button" id="delete-button" class="button delete-button">Excluir</button>
+            </div>
+        </form>
+
+        <div id="success-message" class="message success-message">
+            Parecer atualizado com sucesso!
+        </div>
+        <div id="error-message" class="message error-message">
+            Erro ao atualizar parecer. Tente novamente.
+        </div>
+    </div>
+
+    <!-- Modal de confirmação de exclusão -->
+    <div id="delete-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title">Confirmar Exclusão</h2>
+            <p>Tem certeza que deseja excluir este parecer?</p>
+            <div class="modal-buttons">
+                <button id="cancel-delete" class="button back-button">Cancelar</button>
+                <button id="confirm-delete" class="button delete-button">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Firebase
+       const firebaseConfig = {
+  apiKey: "AIzaSyDjQmP4qsdC9QnKbvvY4qHmSn_0_GOL-qE",
+  authDomain: "sistema-pareceres-75591.firebaseapp.com",
+  projectId: "sistema-pareceres-75591",
+  storageBucket: "sistema-pareceres-75591.firebasestorage.app",
+  messagingSenderId: "318575244381",
+  appId: "1:318575244381:web:652cbb0d741b1c6bb449b4"
+};
+
+        // Inicializa Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // Verificar autenticação
+        auth.onAuthStateChanged((user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            loadParecer(); // Carrega o parecer após confirmar autenticação
+        });
+
+        // Elements
+        const form = document.getElementById('parecer-form');
+        const successMessage = document.getElementById('success-message');
+        const errorMessage = document.getElementById('error-message');
+        const deleteModal = document.getElementById('delete-modal');
+        const deleteButton = document.getElementById('delete-button');
+        const confirmDeleteButton = document.getElementById('confirm-delete');
+        const cancelDeleteButton = document.getElementById('cancel-delete');
+
+        // Logout handler
+        document.getElementById('logout-button').addEventListener('click', async () => {
+            try {
+                await auth.signOut();
+                window.location.href = 'login.html';
+            } catch (error) {
+                console.error('Erro ao fazer logout:', error);
+                alert('Erro ao fazer logout. Tente novamente.');
+            }
+        });
+
+        // Get parecer ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const parecerId = urlParams.get('id');
+
+        if (!parecerId) {
+            window.location.href = 'inicio.html';
+        }
+
+        // Função para mostrar mensagem
+        function showMessage(element, duration = 3000) {
+            element.style.display = 'block';
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, duration);
+        }
+
+        // Carregar parecer
+        async function loadParecer() {
+            try {
+                const doc = await db.collection('pareceres').doc(parecerId).get();
+                
+                if (!doc.exists) {
+                    alert('Parecer não encontrado');
+                    window.location.href = 'inicio.html';
+                    return;
+                }
+
+                const data = doc.data();
+                document.getElementById('ementa').value = data.ementa || '';
+                document.getElementById('processo').value = data.processo || '';
+                document.getElementById('orgao').value = data.orgao || '';
+                document.getElementById('unidade').value = data.unidade || '';
+                document.getElementById('numero-parecer').value = data.numeroParecer || '';
+                document.getElementById('link-sei').value = data.linkSei || '';
+            } catch (error) {
+                console.error('Erro ao carregar parecer:', error);
+                alert('Erro ao carregar parecer. Tente novamente.');
+            }
+        }
+
+        // Event Listeners
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            try {
+                const parecer = {
+                    ementa: document.getElementById('ementa').value,
+                    processo: document.getElementById('processo').value,
+                    orgao: document.getElementById('orgao').value,
+                    unidade: document.getElementById('unidade').value,
+                    numeroParecer: document.getElementById('numero-parecer').value,
+                    linkSei: document.getElementById('link-sei').value,
+                    dataAtualizacao: new Date()
+                };
+
+                await db.collection('pareceres').doc(parecerId).update(parecer);
+                showMessage(successMessage);
+                
+                // Redirecionar após atualização bem-sucedida
+                setTimeout(() => {
+                    window.location.href = 'inicio.html';
+                }, 2000);
+            } catch (error) {
+                console.error('Erro:', error);
+                showMessage(errorMessage);
+            }
+        });
+
+        // Modal de exclusão
+        deleteButton.addEventListener('click', () => {
+            deleteModal.style.display = 'flex';
+        });
+
+        cancelDeleteButton.addEventListener('click', () => {
+            deleteModal.style.display = 'none';
+        });
+
+        confirmDeleteButton.addEventListener('click', async () => {
+            try {
+                await db.collection('pareceres').doc(parecerId).delete();
+                window.location.href = 'inicio.html';
+            } catch (error) {
+                console.error('Erro ao excluir parecer:', error);
+                alert('Erro ao excluir parecer. Tente novamente.');
+                deleteModal.style.display = 'none';
+            }
+        });
+
+        // Fechar modal clicando fora
+        deleteModal.addEventListener('click', (e) => {
+            if (e.target === deleteModal) {
+                deleteModal.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

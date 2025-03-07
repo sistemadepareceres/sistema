@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Início - Sistema de Pareceres</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="home-page">
+    <div class="home-container">
+        <header class="main-header">
+            <h1>Sistema de Pareceres</h1>
+            <button id="logout-button" class="secondary-button">Sair</button>
+        </header>
+
+        <div class="welcome-section">
+            <h2>Bem-vindo(a), <span id="user-name">Usuário</span></h2>
+            <p>Selecione uma das opções abaixo:</p>
+        </div>
+
+        <div class="menu-buttons" id="menu-buttons">
+            <!-- Botão Cadastrar Parecer será adicionado dinamicamente para admins -->
+            <a href="consulta.html" class="menu-button">
+                <i class="icon">🔍</i>
+                <span>Consultar Pareceres</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDjQmP4qsdC9QnKbvvY4qHmSn_0_GOL-qE",
+            authDomain: "sistema-pareceres-75591.firebaseapp.com",
+            projectId: "sistema-pareceres-75591",
+            storageBucket: "sistema-pareceres-75591.firebasestorage.app",
+            messagingSenderId: "318575244381",
+            appId: "1:318575244381:web:652cbb0d741b1c6bb449b4"
+        };
+
+        // Inicializa Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Elements
+        const userNameSpan = document.getElementById('user-name');
+        const logoutButton = document.getElementById('logout-button');
+        const menuButtons = document.getElementById('menu-buttons');
+
+        let isAdmin = false; // Variável global para verificar se o usuário é administrador
+
+        // Verificar autenticação e status de administrador
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                userNameSpan.textContent = user.email.split('@')[0];
+                // Verificar se o usuário é administrador
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                isAdmin = userDoc.exists && userDoc.data().isAdmin === true;
+
+                // Adicionar botão "Cadastrar Parecer" apenas para administradores
+                if (isAdmin) {
+                    const cadastroButton = document.createElement('a');
+                    cadastroButton.href = 'cadastro.html';
+                    cadastroButton.className = 'menu-button';
+                    cadastroButton.innerHTML = `
+                        <i class="icon">📝</i>
+                        <span>Cadastrar Parecer</span>
+                    `;
+                    menuButtons.insertBefore(cadastroButton, menuButtons.firstChild);
+                }
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        // Logout
+        logoutButton.addEventListener('click', async () => {
+            try {
+                await auth.signOut();
+                window.location.href = 'login.html';
+            } catch (error) {
+                console.error('Erro ao fazer logout:', error);
+                alert('Erro ao fazer logout. Tente novamente.');
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91cd41efdae2bf9a',t:'MTc0MTM4MzY5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
