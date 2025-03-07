@@ -177,7 +177,6 @@
             <div class="button-group" id="button-group">
                 <button onclick="window.location.href='inicio.html'" class="button back-button">Voltar</button>
                 <!-- Botão Novo Parecer será adicionado dinamicamente para admins -->
-                <button id="show-all-button" class="button primary-button">Mostrar Todos</button>
                 <button id="logout-button" class="button back-button">Sair</button>
             </div>
         </div>
@@ -228,7 +227,6 @@
         const tableBody = document.getElementById('pareceres-table-body');
         const loadingDiv = document.getElementById('loading');
         const noResultsDiv = document.getElementById('no-results');
-        const showAllButton = document.getElementById('show-all-button');
         const buttonGroup = document.getElementById('button-group');
 
         let isAdmin = false; // Variável global para verificar se o usuário é administrador
@@ -249,7 +247,7 @@
                 newParecerButton.className = 'button primary-button';
                 newParecerButton.textContent = 'Novo Parecer';
                 newParecerButton.onclick = () => window.location.href = 'cadastro.html';
-                buttonGroup.insertBefore(newParecerButton, showAllButton);
+                buttonGroup.insertBefore(newParecerButton, document.getElementById('logout-button'));
             }
         });
 
@@ -264,17 +262,21 @@
             }
         });
 
-        // Carregar pareceres (com limite de 10 por página)
-        async function loadPareceres(searchTerm = '', showAll = false) {
+        // Carregar pareceres (sem limite por página)
+        async function loadPareceres(searchTerm = '') {
             try {
                 loadingDiv.style.display = 'block';
                 noResultsDiv.style.display = 'none';
                 tableBody.innerHTML = '';
 
-                let query = db.collection('pareceres').orderBy('dataCriacao', 'desc');
-                if (showAll) {
-                    query = query.limit(10); // Limite de 10 por página
+                if (!searchTerm) {
+                    loadingDiv.style.display = 'none';
+                    noResultsDiv.style.display = 'block';
+                    noResultsDiv.textContent = 'Digite algo para pesquisar.';
+                    return;
                 }
+
+                let query = db.collection('pareceres').orderBy('dataCriacao', 'desc');
                 const snapshot = await query.get();
 
                 if (snapshot.empty) {
@@ -298,10 +300,10 @@
                             parecer.unidade?.toLowerCase().includes(searchLower) ||
                             parecer.numeroParecer?.toLowerCase().includes(searchLower);
                         
-                        if (!matchesSearch) return;
+                        if (matchesSearch) {
+                            pareceres.push(parecer);
+                        }
                     }
-                    
-                    pareceres.push(parecer);
                 });
 
                 if (pareceres.length === 0) {
@@ -310,7 +312,6 @@
                 } else {
                     pareceres.forEach(parecer => {
                         const row = document.createElement('tr');
-                        // Mostrar botões de ação apenas para administradores
                         const actionsColumn = isAdmin ? `
                             <button onclick="editParecer('${parecer.id}')" class="button edit-button">Editar</button>
                             <button onclick="deleteParecer('${parecer.id}')" class="button delete-button">Excluir</button>
@@ -346,11 +347,6 @@
             }, 300);
         });
 
-        // Mostrar todos os pareceres (limitado a 10)
-        showAllButton.addEventListener('click', () => {
-            loadPareceres('', true);
-        });
-
         // Editar parecer
         function editParecer(id) {
             if (isAdmin) {
@@ -374,5 +370,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91cd30656f7d456c',t:'MTc0MTM4Mjk3NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91cd56510c049c30',t:'MTc0MTM4NDUyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
